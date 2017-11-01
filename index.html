@@ -1,0 +1,210 @@
+
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8" />
+
+        <!-- mobile meta (hooray!) -->
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+
+        <title>Meshugge - Stay curious & indulge in the unknown</title>
+        <meta name="title" content="Meshugge - Stay curious & indulge in the unknown">
+        <meta name="description" content="We will soon launch our first event in Zurich. By signing up you are already one step closer to your new fashion pieces. Follow us on Instagram to follow the adventure and participate in our giveaways.">
+
+        <!-- Open Graph data -->
+        <meta property="og:title" content="Meshugge - Stay curious & indulge in the unknown" />
+        <meta property="og:site_name" content="Meshugge" />
+        <meta property="og:description" content="We will soon launch our first event in Zurich. By signing up you are already one step closer to your new fashion pieces. Follow us on Instagram to follow the adventure and participate in our giveaways." />
+        <meta property="og:url" content="http://meshugge.ch" />
+        <meta property="og:image" content="http://meshugge.ch/images/og_img.jpg" />
+        <meta property="og:image:type" content="" />
+        <meta property="og:type" content="" />
+
+        <!-- Our Styles -->
+        <link rel="stylesheet" href="css/styles.css?v=4" />
+
+        <!-- Icons & Favicons (for more: http://www.jonathantneal.com/blog/understand-the-favicon/) -->
+        <!-- Apple touch icon (for more: http://mathiasbynens.be/notes/touch-icons) -->
+        <link rel="apple-touch-icon-precomposed" href="">
+        <!-- Safari, Chrome, Firefox, Opera -->
+        <link rel="icon" href="favicon.png?v=3">
+        <!--[if IE]><link rel="shortcut icon" href="favicon.ico"><![endif]-->
+        <!-- or, set /favicon.ico for IE10 win -->
+        <meta name="msapplication-TileColor" content="#FFFFFF">
+        <meta name="msapplication-TileImage" content="">
+    </head>
+
+    <body>
+        <script type="x-shader/x-vertex" id="vertexPillShader">
+
+            uniform float amplitude;
+            attribute float displacement;
+            uniform float width;
+            uniform float height;
+            uniform vec3 scale;
+            attribute vec2 a_texCoord;
+            attribute vec4 vTexCoord;
+            varying float x;
+            varying float y;
+            #define PI 3.14159265359
+            // outgoing coordinate
+
+            void main() {
+                vec3 alignedPosition = vec3(position.x * scale.x, position.y * scale.y, position.z*scale.z);
+                vec2 pos = alignedPosition.xy;
+
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                mat4 modelViewProjection = projectionMatrix * modelViewMatrix;
+                vec4 v = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+                x = pos.x / width;
+                y = pos.y / height;
+
+                gl_Position = v;
+            }
+        </script>
+
+        <script type="x-shader/x-fragment" id="fragmentPillShader">
+            #ifdef GL_ES
+            precision mediump float;
+            #endif
+
+            #define PI 3.14159265359
+
+            uniform float u_time;
+            uniform float speed;
+
+            uniform vec3 fogColor;
+            uniform float fogNear;
+            uniform float fogFar;
+
+            varying float x;
+            varying float y;
+
+
+            vec3 rgbToNumber (vec3 rgb) {
+                vec3 color = vec3(0.0);
+                color.r = rgb.x / 255.0;
+                color.g = rgb.y / 255.0;
+                color.b = rgb.z / 255.0;
+
+                return color;
+            }
+
+            // vec3 colorA = vec3(30.0, 76.0, 163.0);
+            // vec3 colorB = vec3(188.0, 91.0, 221.0);
+
+            float step1 = -0.15;
+            float step2 = 0.30;
+            float step3 = 0.55;
+            float step4 = 1.2;
+
+            float saturation = 0.25;
+    
+            vec3 color1 = vec3(9.0, 193.0, 255.0);
+            vec3 color2 = vec3(74.0, 71.0, 255.0);
+            vec3 color3 = vec3(130.0, 86.0, 229.0);
+            vec3 color4 = vec3(252.0, 196.0, 115.0);
+
+
+            void main() {
+                vec2 st = vec2(x + 0.5, y + 0.5);
+
+                vec3 color = vec3(0.0);
+
+                // float translate = abs(float(1.0 + sin(PI * (st.y + (u_time * speed)) * 1.5)) * 0.5);
+                // st.y += 0.2;
+                vec3 pct = vec3(st.y);
+                // pct.r = translate;
+
+                // color = mix(rgbToNumber(colorA), rgbToNumber(colorB), pct);
+        
+                color = mix(rgbToNumber(color1), rgbToNumber(color2), smoothstep(step1, step2, st.y));
+                color = mix(color, rgbToNumber(color3), smoothstep(step2, step3, st.y));
+                color = mix(color, rgbToNumber(color4), smoothstep(step3, step4, st.y));
+
+                gl_FragColor = vec4(color, 1.0);
+
+                // saturation
+                float average = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;
+                if (saturation > 0.0) {
+                    gl_FragColor.rgb += (average - gl_FragColor.rgb) * (1.0 - 1.0 / (1.001 - saturation));
+                } else {
+                    gl_FragColor.rgb += (average - gl_FragColor.rgb) * (-saturation);
+                }
+
+                #ifdef USE_FOG
+                    #ifdef USE_LOGDEPTHBUF_EXT
+                        float depth = gl_FragDepthEXT / gl_FragCoord.w;
+                    #else
+                        float depth = gl_FragCoord.z / gl_FragCoord.w;
+                    #endif
+                    float fogFactor = smoothstep( fogNear, fogFar, depth );
+                    gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
+                #endif
+            }
+        </script>
+        <div class="fake-scroll">
+            <div class="fake-scroll-inner">
+                <div class="c-content__step c-content__step--1" data-start="0" data-end="25">
+                    <h1>Stay curious &<br> indulge in the<br> unknown</h1>
+                </div>
+                <div class="c-content__step c-content__step--2" data-start="30" data-end="55">
+                    <h2>Your new fashion<br> event is coming to<br> Zurich</h2>
+                </div>
+                <div class="c-content__step c-content__step--3 c-content__step--max-width" data-start="60" data-end="100">
+                    <p>
+                        We will soon launch our first event in zurich. By signing up you are already one step closer to your new fashion pieces. <a href="https://www.instagram.com/meshugge_ch/" class="u-anchor" target="_blank">Follow us on Instagram</a> and participate in our giveaways. We will keep you updated.
+                    </p>
+                    <a href="#" class="c-content__read-more-btn js-read-more">Read more</a>
+                    <div class="c-content__read-more-content">
+                        <div class="c-content__read-more-content-inner">
+                            <p>
+                                Meshugge is yiddish for crazy. We are crazy about fashion, life and expressing ourselves with likeminded fashion addicted people. 
+                                At our events you will discover and get a new dose of fashion, try them on, have a drink with your best friends and order it directly to your home address.
+                                Meshugge is here to partner with clients and brands with our goal to celebrate fashion and bring out the Meshugge in everyone.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- <input type="mail" placeholder="Your email" /> -->
+                    <div style="text-align: center;">
+                        <a class="cta" href="http://eepurl.com/c1bFEr" target="_blank">Signup to our newsletter</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="c-ui">
+            <div class="c-ui__elem c-ui__elem--scroll"></div>
+            <div class="c-ui__elem c-ui__elem--logo">
+                Meshugge
+            </div>
+            <div class="c-ui__elem c-ui__elem--logo-alt">
+                <svg 
+                 xmlns="http://www.w3.org/2000/svg"
+                 xmlns:xlink="http://www.w3.org/1999/xlink"
+                 viewBox="0 0 119 30" enable-background="new 0 0 119 30">
+                <path fill-rule="evenodd"  fill="rgb(255, 255, 255)"
+                 d="M119.000,25.720 L110.223,30.000 L99.014,30.000 L96.815,25.674 L109.023,25.674 L96.821,1.246 L101.207,1.288 L112.788,24.437 L114.611,23.558 L114.611,1.246 L118.997,1.246 L118.997,24.322 L118.996,24.322 L119.000,25.720 ZM84.787,19.061 L82.339,19.061 L76.897,30.000 L72.512,30.000 L77.953,19.061 L77.950,19.061 L80.015,14.735 L84.787,14.735 L84.787,5.572 L75.360,5.572 L77.425,1.246 L84.787,1.246 L89.173,1.246 L89.173,19.061 L94.614,30.000 L90.228,30.000 L84.787,19.061 ZM63.741,1.246 L68.126,1.246 L68.126,30.000 L63.741,30.000 L63.741,1.246 ZM43.115,30.000 L32.014,24.580 L32.026,20.307 L32.026,1.246 L36.411,1.246 L36.411,16.498 L40.797,14.383 L40.797,1.246 L45.182,1.246 L45.182,14.407 L45.188,16.543 L36.411,20.824 L36.411,22.429 L43.115,25.674 L48.265,25.674 L54.969,22.429 L54.969,1.246 L59.355,1.246 L59.355,20.307 L59.366,24.580 L48.265,30.000 L43.115,30.000 ZM23.231,30.000 L14.213,30.000 L14.213,25.674 L23.231,25.674 L23.231,8.815 L16.531,5.572 L9.827,8.817 L9.827,30.000 L5.441,30.000 L5.441,10.940 L-0.000,0.001 L4.386,0.042 L7.241,5.760 L16.531,1.246 L27.621,6.614 L27.621,10.940 L27.617,10.938 L27.617,25.674 L27.621,25.674 L27.621,30.000 L27.617,30.000 L23.231,30.000 Z"/>
+                </svg>
+            </div>
+<!--             <div class="c-ui__elem c-ui__elem--instagram">
+                <a href="http://instagram.com">Instagram</a>
+            </div> -->
+        </div>
+        
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-105027861-3', 'auto');
+          ga('send', 'pageview');
+
+        </script>
+        <script src="js/build.js?v=3"></script>
+    </body>
+</html>
